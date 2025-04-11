@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "ShotEnums.h"
+#include "TowerDefence/Shot/Attribute/TowerDamageType.h"
+#include "TowerDefence/Shot/Debuff/DebuffEnums.h"
 #include "ShotDataAsset.generated.h"
 
 /**
@@ -24,7 +26,15 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shot Data")
 	bool bIsAreaAttack = false;					// 단일/범위 공격 여부
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shot Data")
+	float AreaRadius = 100.0f;					// 범위 공격 반경
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shot Data")
-	EAttributeType AttributeType = EAttributeType::None; // 속성 타입
+	float AreaFalloff = 0.5f;					// 범위 공격 감쇠 비율(0.0 ~ 1.0)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shot Data")
+	//EAttributeType AttributeType = EAttributeType::None; // 속성 타입
+    TSubclassOf<UTowerDamageType> AttributeType = UTowerDamageType::StaticClass(); // 속성 타입(데미지 타입)
+
 };

@@ -25,6 +25,7 @@ AGunBaseActor::AGunBaseActor()
 
 	SightSensor = CreateDefaultSubobject<USphereComponent>(TEXT("SightSensor"));
 	SightSensor->SetupAttachment(Root);	
+	SightSensor->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 
 	GunDatas.Reserve(3); // 레벨 1~3까지의 총기 데이터 배열 크기 설정
 }
@@ -53,7 +54,6 @@ void AGunBaseActor::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	SightSensor->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 	SightSensor->OnComponentBeginOverlap.AddUniqueDynamic(this, &AGunBaseActor::OnSightOverlapBegin); // 시야 센서의 겹침 시작 이벤트 바인딩
 	SightSensor->OnComponentEndOverlap.AddUniqueDynamic(this, &AGunBaseActor::OnSightOverlapEnd); // 시야 센서의 겹침 종료 이벤트 바인딩
 }
@@ -162,17 +162,25 @@ void AGunBaseActor::LookFirstTarget(float DeltaTime)
 {
 	if (!TargetEnemies.IsEmpty())
 	{
-		AEnemyBase* FirstTarget = TargetEnemies[0]; // 첫 번째 적 캐릭터
-		if (FirstTarget)
+		int32 Count = FMath::Min(CurrentGunData->TargetCount, TargetEnemies.Num()); // 공격할 적의 수
+		FVector TargetLocation = FVector::ZeroVector; // 타겟 위치 초기화
+		for (int32 i = 0; i < Count; i++)
 		{
-			FVector Direction = FirstTarget->GetActorLocation() - GetActorLocation(); // 총기 위치에서 적 캐릭터 위치로의 방향 벡터
-			Direction.Z = 0.0f;		// Yaw 회전만 고려하기 위해 높이(Z) 제거
-			Direction.Normalize();	// 방향 벡터 정규화
-
-			FRotator NewRotation = Direction.Rotation(); // 방향 벡터를 회전으로 변환
-
-			NewRotation = FMath::RInterpConstantTo(GetActorRotation(), NewRotation, DeltaTime, 360.0f);
-			SetActorRotation(NewRotation); // 총기 회전 설정
+			if (TargetEnemies[i])
+			{
+				TargetLocation += TargetEnemies[i]->GetActorLocation(); // 타겟 위치 누적
+			}
 		}
+		TargetLocation /= Count; // 평균 위치 계산
+		
+
+		FVector Direction = TargetLocation - GetActorLocation(); // 총기 위치에서 적 캐릭터 평균 위치로의 방향 벡터
+		Direction.Z = 0.0f;		// Yaw 회전만 고려하기 위해 높이(Z) 제거
+		Direction.Normalize();	// 방향 벡터 정규화
+
+		FRotator NewRotation = Direction.Rotation(); // 방향 벡터를 회전으로 변환
+
+		NewRotation = FMath::RInterpConstantTo(GetActorRotation(), NewRotation, DeltaTime, 360.0f);
+		SetActorRotation(NewRotation); // 총기 회전 설정
 	}
 }

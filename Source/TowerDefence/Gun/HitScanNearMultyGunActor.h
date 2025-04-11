@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "HitScanGunBaseActor.h"
-#include "HitScanMultyGunActor.generated.h"
+#include "HitScanNearMultyGunActor.generated.h"
 
 /**
- * 
+ * 히트스캔 총기(가까운 적을 우선 공격)
  */
 UCLASS()
-class TOWERDEFENCE_API AHitScanMultyGunActor : public AHitScanGunBaseActor
+class TOWERDEFENCE_API AHitScanNearMultyGunActor : public AHitScanGunBaseActor
 {
 	GENERATED_BODY()
 	
