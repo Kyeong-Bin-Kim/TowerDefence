@@ -20,7 +20,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Area")
@@ -31,7 +30,7 @@ public:
 
 private:
 	UFUNCTION()
-	void OnMouseClick(AActor* HitActor);	// 마우스 클릭 이벤트 처리
+	void OnMouseClick();	// 마우스 클릭 이벤트 처리
 
 	void UpdateLocation();
 

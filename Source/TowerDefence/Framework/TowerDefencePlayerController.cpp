@@ -31,17 +31,7 @@ void ATowerDefencePlayerController::SetupInputComponent()
 }
 
 void ATowerDefencePlayerController::OnMouseClick(const FInputActionValue& Value)
-{
-	AActor* HitActor = nullptr;	// 클릭한 액터를 저장할 변수
-	FHitResult HitResult;
-	if (GetHitResultUnderCursor(ECC_GameTraceChannel2, false, HitResult))	// ECC_GameTraceChannel2로 트레이스
-	{
-		HitActor = HitResult.GetActor();
-	}
-	//if (HitActor)
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("Clicked on: %s"), *HitActor->GetActorNameOrLabel());
-	//}
-	OnMouseClickInput.Broadcast(HitActor);	// 마우스 클릭 델리게이트 호출
-
+{	
+	//UE_LOG(LogTemp, Warning, TEXT("ATowerDefencePlayerController : Mouse Clicked!"));	// 마우스 클릭 로그 출력
+	OnMouseClickInput.Broadcast();	// 마우스 클릭 델리게이트 호출
 }

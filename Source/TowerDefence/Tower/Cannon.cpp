@@ -3,8 +3,9 @@
 
 #include "Cannon.h"
 #include "Components/SphereComponent.h"
+#include "NiagaraComponent.h"
 #include "TowerDefence/Tower/Tower.h"
-#include "TowerDefence/Enemy/EnemyBase.h"
+#include "TowerDefence/Enemy/Enemy.h"
 
 // Sets default values
 ACannon::ACannon()
@@ -23,6 +24,10 @@ ACannon::ACannon()
 	MuzzleLocation->SetupAttachment(Root);
 	MuzzleLocation->SetRelativeLocation(FVector::ForwardVector * 100.0f); // 총구 위치 설정(에디터에서 상세조정필요)
 
+	FireEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("FireEffect"));
+	FireEffect->SetupAttachment(MuzzleLocation); // 발사 이펙트 위치 설정
+	FireEffect->SetAutoActivate(false); // 자동 활성화 비활성화
+
 	SightSensor = CreateDefaultSubobject<USphereComponent>(TEXT("SightSensor"));
 	SightSensor->SetupAttachment(Root);
 	SightSensor->SetCollisionProfileName(TEXT("OverlapAllDynamic"));	// 오버랩만 되도록 설정
@@ -39,16 +44,29 @@ void ACannon::Tick(float DeltaTime)
 void ACannon::OnInitialize(ATower* InTower, EFireOrder InOrder)
 {
 	ParentTower = InTower;		// 부모 타워 설정
+	ParentTower->OnTowerLevelUp.AddLambda(
+		[this](int32 _)
+		{			
+			ApplyModifierChanges();	// 레벨업 했을 때 캐논이 수행할 함수
+		}
+	);
 	FireOrder = InOrder;		// 발사 순서 설정
-	OnModifierChange();			// 모디파이어 초기화
+	ApplyModifierChanges();		// 모디파이어 초기화
 
 	// 시야 센서의 겹침 시작 이벤트 바인딩
 	SightSensor->OnComponentBeginOverlap.AddUniqueDynamic(this, &ACannon::OnSightOverlapBegin); 
+	TArray<AActor*> OverlapActors;
+	SightSensor->GetOverlappingActors(OverlapActors);
+	for (AActor* Actor : OverlapActors)
+	{
+		OnSightOverlapBegin(SightSensor, Actor, nullptr, -1, false, FHitResult() );	// 이미 겹쳐있는 적 처리
+	}
+
 	// 시야 센서의 겹침 종료 이벤트 바인딩
 	SightSensor->OnComponentEndOverlap.AddUniqueDynamic(this, &ACannon::OnSightOverlapEnd); 
 }
 
-void ACannon::OnModifierChange()
+void ACannon::ApplyModifierChanges()
 {
 	// 시야 반경 설정
 	SightSensor->SetSphereRadius(ParentTower->GetRange()); 
@@ -62,9 +80,10 @@ void ACannon::OnModifierChange()
 
 void ACannon::OnSightOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	//UE_LOG(LogTemp, Warning, TEXT("[ %s ] Overlap Begin: %s"), *GetName(), *OtherActor->GetName());
 	if (OtherActor->ActorHasTag(TEXT("Enemy")))
 	{
-		AEnemyBase* Enemy = Cast<AEnemyBase>(OtherActor); // 적 캐릭터인지 확인
+		AEnemy* Enemy = Cast<AEnemy>(OtherActor); // 적 캐릭터인지 확인
 		if (Enemy)
 		{
 			if (TargetEnemies.IsEmpty())
@@ -82,7 +101,7 @@ void ACannon::OnSightOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor
 {
 	if (OtherActor->ActorHasTag(TEXT("Enemy")))
 	{
-		AEnemyBase* Enemy = Cast<AEnemyBase>(OtherActor); // 적 캐릭터인지 확인
+		AEnemy* Enemy = Cast<AEnemy>(OtherActor); // 적 캐릭터인지 확인
 		if (Enemy)
 		{
 			TargetEnemies.Remove(Enemy); // 적 캐릭터를 목록에서 제거
@@ -115,7 +134,7 @@ void ACannon::Fire()
 	{
 		// 적을 거리의 오름차순으로 정렬하기
 		FVector GunLocation = GetActorLocation();
-		TargetEnemies.Sort([GunLocation](const AEnemyBase& A, const AEnemyBase& B)
+		TargetEnemies.Sort([GunLocation](const AEnemy& A, const AEnemy& B)
 			{
 				float DistanceSquaredA = FVector::DistSquared(GunLocation, A.GetActorLocation());
 				float DistanceSquaredB = FVector::DistSquared(GunLocation, B.GetActorLocation());
@@ -125,7 +144,7 @@ void ACannon::Fire()
 
 	// 공격 대상 결정
 	int32 Count = FMath::Min(ParentTower->GetTargetCount(), TargetEnemies.Num()); // 공격할 적의 수
-	TArray<AEnemyBase*> CurrentTargetEnemies;
+	TArray<AEnemy*> CurrentTargetEnemies;
 	CurrentTargetEnemies.Reserve(Count);
 	for (int32 i = 0; i < Count; i++)
 	{
@@ -133,6 +152,12 @@ void ACannon::Fire()
 		{
 			CurrentTargetEnemies.Add(TargetEnemies[i]); // 타겟 적 추가
 		}
+	}
+
+	// 발사 이펙트 재생
+	if (FireEffect)
+	{
+		FireEffect->Activate(); // 발사 이펙트 재생
 	}
 	
 	// 발사 델리게이트 호출
@@ -196,7 +221,7 @@ void ACannon::LookFirstTarget(float DeltaTime)
 void ACannon::Test_PrintEnemyList()
 {
 	FString EnemyList;
-	for (AEnemyBase* Enemy : TargetEnemies)
+	for (AEnemy* Enemy : TargetEnemies)
 	{
 		if (Enemy)
 		{

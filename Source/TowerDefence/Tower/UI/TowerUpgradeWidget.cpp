@@ -23,6 +23,15 @@ void UTowerUpgradeWidget::NativeConstruct()
 	BindToAnimationFinished(Close, CloseEvent);	
 }
 
+void UTowerUpgradeWidget::OnInitialize()
+{
+	ATowerDefenceGameMode* GameMode = Cast<ATowerDefenceGameMode>(GetWorld()->GetAuthGameMode());
+	CurruntGold = GameMode->GetGold();
+	GameMode->OnGoldChanged.AddUObject(this, &UTowerUpgradeWidget::UpdateCurrentGold);	// 골드 변화 시 업데이트
+
+	//GameMode->OnGoldChanged.RemoveAll(this);	// 이 객체에서 연결한 모든 델리게이트 해제
+}
+
 void UTowerUpgradeWidget::OpenUpgradeWidget(int32 InUpgradeCost)
 {
 	// Open 애니메이션 재생
@@ -41,14 +50,24 @@ void UTowerUpgradeWidget::OnCloseAnimationFinished()
 	//UE_LOG(LogTemp, Warning, TEXT("Close Animation Finished"));
 }
 
+void UTowerUpgradeWidget::UpdateCurrentGold(int32 InCurrentGold)
+{
+	CurruntGold = InCurrentGold;	// 게임 모드에 골드 변화가 있으면 기록해 놓기
+	//UE_LOG(LogTemp, Warning, TEXT("Current Gold : %d"), CurruntGold);
+}
+
 void UTowerUpgradeWidget::UpgradeTower()
 {
+	//UE_LOG(LogTemp, Warning, TEXT("UTowerUpgradeWidget::UpgradeTower : Mouse Clicked!"));
+
 	OnUpgradeClicked.ExecuteIfBound();	// 업그레이드 버튼 클릭 시 델리게이트 실행
 	CloseUpgradeWidget();				// 업그레이드 위젯 닫기
 }
 
 void UTowerUpgradeWidget::SellTower()
 {
+	//UE_LOG(LogTemp, Warning, TEXT("UTowerUpgradeWidget::SellTower : Mouse Clicked!"));
+
 	//UE_LOG(LogTemp, Warning, TEXT("Tower Sell button clicked!"));
 	OnSellClicked.ExecuteIfBound();	// 판매 버튼 클릭 시 델리게이트 실행
 	CloseUpgradeWidget();			// 업그레이드 위젯 닫기
@@ -65,14 +84,8 @@ void UTowerUpgradeWidget::CloseUpgradeWidget()
 
 void UTowerUpgradeWidget::UpdateButtonState(int32 InUpgradeCost)
 {
-	// GameMode에 있는 돈을 확인해서 UpgradeButton 활성 및 비활성화
-	if (!GameMode)
-	{
-		GameMode = Cast<ATowerDefenceGameMode>(GetWorld()->GetAuthGameMode());
-	}
-
 	// 버튼 활성화 설정
-	bool IsEnabled = GameMode->GetGold() >= InUpgradeCost ? true : false;
+	bool IsEnabled = CurruntGold >= InUpgradeCost ? true : false;
 	UpgradeButton->SetIsEnabled(IsEnabled);	
 
 	// 텍스트 설정(금액, 색상)

@@ -10,10 +10,11 @@
 class ATower;
 class USphereComponent;
 class USceneComponent;
-class AEnemyBase;
+class UNiagaraComponent;
+class AEnemy;
 
 // 발사 시 타겟 적들을 전달하는 델리게이트
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCannonFire, const TArray<AEnemyBase*>&, TargetEnemies); 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCannonFire, const TArray<AEnemy*>&, TargetEnemies); 
 
 /*
 대포 클래스. 범위 안에 있는 적 관리 및 타게팅, 발사 신호를 담당
@@ -32,13 +33,18 @@ public:
 	void OnInitialize(ATower* InTower, EFireOrder InOrder = EFireOrder::Discovery);
 
 	// 타워의 모디파이어가 변경되었을 때 호출되는 함수(타워가 호출하는 함수)
-	void OnModifierChange();
+	void ApplyModifierChanges();
 
 	// 포탄 발사 위치
-	inline FVector GetMuzzleLocation() const { return MuzzleLocation->GetComponentLocation(); }
+	inline FVector GetMuzzleLocation() const { 
+		return MuzzleLocation->GetComponentLocation();
+	}
 
 	// 포탄 발사 방향
 	inline FVector GetMuzzleForwardVector() const { return MuzzleLocation->GetForwardVector(); }
+
+	// 포탄 발사 트랜스폼
+	inline FTransform GetMuzzleTransform() const { return MuzzleLocation->GetComponentTransform(); }
 
 private:
 	// 시야 범위안에 들어온 적을 관리하는 함수
@@ -84,6 +90,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USceneComponent* MuzzleLocation = nullptr;
 
+	// 발사 이펙트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UNiagaraComponent* FireEffect = nullptr;
+
 	// 메시 스케일 조정용
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tower|Cannon", meta = (ClampMin = "0.1"))
 	float ScaleFactor = 2.0f;
@@ -102,7 +112,7 @@ private:
 	ATower* ParentTower = nullptr;
 
 	// 적의 목록 : TArray
-	TArray<AEnemyBase*> TargetEnemies;
+	TArray<AEnemy*> TargetEnemies;
 
 	// 발사 타이머 핸들
 	FTimerHandle ShootTimerHandle;	

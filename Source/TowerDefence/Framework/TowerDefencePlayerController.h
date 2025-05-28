@@ -7,7 +7,7 @@
 #include "InputActionValue.h"
 #include "TowerDefencePlayerController.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMouseClickDelegate, AActor*, InHitTower);	// 마우스 클릭 델리게이트
+DECLARE_MULTICAST_DELEGATE(FOnMouseClickDelegate);	// 마우스 클릭 델리게이트
 
 /**
  * 
@@ -36,5 +36,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* ClickAction = nullptr;	// 클릭 액션
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* MoveAction = nullptr;	// 무브 액션
 
 };
